@@ -7,6 +7,7 @@ package it.polito.tdp.imdb;
 import java.net.URL;
 import java.util.ResourceBundle;
 
+import it.polito.tdp.imdb.model.Actor;
 import it.polito.tdp.imdb.model.Model;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -35,10 +36,10 @@ public class FXMLController {
     private Button btnSimulazione; // Value injected by FXMLLoader
 
     @FXML // fx:id="boxGenere"
-    private ComboBox<?> boxGenere; // Value injected by FXMLLoader
+    private ComboBox<String> boxGenere; // Value injected by FXMLLoader
 
     @FXML // fx:id="boxAttore"
-    private ComboBox<?> boxAttore; // Value injected by FXMLLoader
+    private ComboBox<Actor> boxAttore; // Value injected by FXMLLoader
 
     @FXML // fx:id="txtGiorni"
     private TextField txtGiorni; // Value injected by FXMLLoader
@@ -48,16 +49,72 @@ public class FXMLController {
 
     @FXML
     void doAttoriSimili(ActionEvent event) {
+    	this.txtResult.clear();
+    	//controllo sugli input
+    	if(!this.model.isGraphCreated()) {
+    		this.txtResult.setText("Devi prima creare il grafico!");
+    		return;
+    	}
+    	Actor a = this.boxAttore.getValue();
+    	if(a == null) {
+    		this.txtResult.setText("Devi selezionare un attore dall'apposita tendina");
+    		return;
+    	}
+    	//se sono qui, tutto ok, posso proseguire.
+    	this.txtResult.setText("ATTORI SIMILI a: "+a.getFirstName()+" "+a.getLastName()+"\n");
+    	if(this.model.getSimili(a).size() == 0) {
+    		this.txtResult.setText("Non ce ne sono: vertice isolato\n");
+    	}else {
+    		for(Actor aa : this.model.getSimili(a)) {
+    			this.txtResult.appendText(aa.toString()+"\n");
+    		}
+    	}
 
     }
 
     @FXML
     void doCreaGrafo(ActionEvent event) {
-
+    	this.txtResult.clear();
+    	//controllo input
+    	String g = this.boxGenere.getValue();
+    	if(g == null) {
+    		this.txtResult.setText("Devi selezionare un genere dall'apposita tendina");
+    		return;
+    	}
+    	//se sono qui posso proseguire con la creazione del grafo
+    	this.model.creaGrafo(g);
+    	this.txtResult.setText("Grafo creato\n");
+    	this.txtResult.appendText("#VERTICI: "+this.model.nVertices()+"\n");
+    	this.txtResult.appendText("#ARCHI: "+this.model.nArchi()+"\n");
+    	//popolo la tendina degli attori con tutti quelli che sono nel grafo come vertici
+    	this.boxAttore.getItems().clear();
+    	for(Actor a : this.model.getVertices()) {
+    		this.boxAttore.getItems().add(a);
+    	}
     }
 
     @FXML
     void doSimulazione(ActionEvent event) {
+    	this.txtResult.clear();
+    	//controllo input
+    	if(!this.model.isGraphCreated()) {
+    		this.txtResult.setText("Devi prima creare il grafico!");
+    		return;
+    	}
+    	int n;
+    	try {
+    		n = Integer.parseInt(this.txtGiorni.getText());
+    	}catch(NumberFormatException e) {
+    		this.txtResult.setText("Devi inserire un valore numerico intero");
+    		return;
+    	}
+    	//se sono qui posso proseguire con la simulazione
+    	this.model.simulazione(n);
+    	this.txtResult.setText("Attori intervistati: "+this.model.intereviews().size()+"\n");
+    	for(Actor a : this.model.intereviews()) {
+    		this.txtResult.appendText(""+a+"\n");
+    	}
+    	this.txtResult.appendText("Numero giorni di pausa: "+this.model.pauses()+"\n");
 
     }
 
@@ -75,5 +132,7 @@ public class FXMLController {
     
     public void setModel(Model model) {
     	this.model = model;
+    	this.boxGenere.getItems().clear();
+    	this.boxGenere.getItems().addAll(this.model.getGeneri());
     }
 }
